@@ -9,6 +9,7 @@ import {
   isSizeAPIErrorResponse,
   structuredErrorOfSizeAPI,
 } from "./api/size";
+import { buildFetchOutput, buildSearchOutput } from "./chatgpt";
 import { PKG_NAME, PKG_VERSION } from "./constants";
 import {
   structuredPackageStatsHistoryOutput,
@@ -118,7 +119,9 @@ export const createServer = (): McpServer => {
       },
       outputSchema: structuredPackageStatsHistoryOutput.schema,
     },
-    async ({ name }) => {
+    async ({ name: rawName }) => {
+      const name = rawName.trim();
+
       try {
         if (!isNonEmptyString(name)) {
           return structuredPackageStatsHistoryOutput.error({
@@ -145,6 +148,111 @@ export const createServer = (): McpServer => {
           ],
         });
       }
+    },
+  );
+
+  // for ChatGPT
+  // https://platform.openai.com/docs/mcp#create-an-mcp-server
+  server.registerTool(
+    "search",
+    {
+      annotations: {
+        destructiveHint: false,
+        openWorldHint: true,
+        readOnlyHint: true,
+        title: "Get information about an npm package",
+      },
+      description: [
+        "Get all the past information about an npm package stored in bundlephobia.",
+        "",
+        "For example, you can retrieve information about:",
+        "- Bundle size",
+        "- Tree-shakeability",
+        "- Dependencies",
+        "- Peer dependencies",
+        "- Assets",
+        "## Usage",
+        "```",
+        "search(query: '$PACKAGE_NAME')",
+        "```",
+      ].join("\n"),
+      inputSchema: {
+        query: z
+          .string()
+          .describe("The name of the npm package to get information about."),
+      },
+    },
+    async ({ query }) => {
+      const name = query.trim();
+
+      if (!isNonEmptyString(name)) {
+        return structuredPackageStatsHistoryOutput.error({
+          code: "InvalidInputError",
+          messages: ["Package name must be a non-empty string"],
+        });
+      }
+      const packageInfo = await fetchPackageHistory(name);
+
+      if (isPackageHistoryAPIErrorResponse(packageInfo)) {
+        return structuredPackageStatsHistoryOutput.error(
+          structuredErrorOfPackageHistoryAPI(packageInfo),
+        );
+      }
+
+      return buildSearchOutput(packageInfo);
+    },
+  );
+
+  // for ChatGPT
+  // https://platform.openai.com/docs/mcp#create-an-mcp-server
+  server.registerTool(
+    "fetch",
+    {
+      annotations: {
+        destructiveHint: false,
+        openWorldHint: true,
+        readOnlyHint: true,
+        title: "Get a version history of npm packages",
+      },
+      description: [
+        "Get information about an npm package with bundlephobia.",
+        "",
+        "For example, you can retrieve information about:",
+        "- Bundle size",
+        "- Tree-shakeability",
+        "- Dependencies",
+        "- Peer dependencies",
+        "- Assets",
+        "## Usage",
+        "```",
+        "fetch(id: '$PACKAGE_NAME@$VERSION')",
+        "```",
+      ].join("\n"),
+      inputSchema: {
+        id: z
+          .string()
+          .describe(
+            "The name and version of the npm package to fetch. e.g. hono@4.8.7",
+          ),
+      },
+    },
+    async ({ id }) => {
+      const [name, version] = id.split("@").map((s) => s.trim());
+      if (!isNonEmptyString(name) || !isNonEmptyString(version)) {
+        return structuredPackageStatsOutput.error({
+          code: "InvalidInputError",
+          messages: ["Package name and version must be non-empty strings"],
+        });
+      }
+
+      const packageInfo = await fetchPackageHistory(name);
+      if (isPackageHistoryAPIErrorResponse(packageInfo)) {
+        return structuredPackageStatsHistoryOutput.error(
+          structuredErrorOfPackageHistoryAPI(packageInfo),
+        );
+      }
+
+      return buildFetchOutput(packageInfo, name, version);
     },
   );
 

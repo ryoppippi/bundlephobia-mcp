@@ -37,7 +37,7 @@ interface PackageBundle {
   isModuleType: boolean;
 }
 
-interface PackageInfo {
+export interface PackageInfo {
   description: string;
   name: string;
   repository: string;
