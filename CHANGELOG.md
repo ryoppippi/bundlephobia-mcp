@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.9
+
+### &nbsp;&nbsp;&nbsp;Features
+
+- Add Claude Code integration sections &nbsp;-&nbsp; by **ryoppippi** [<samp>(fc174)</samp>](https://github.com/sushichan044/bundlephobia-mcp/commit/fc17466)
+- Add tools for ChatGPT &nbsp;-&nbsp; by **sushichan044** [<samp>(c56e7)</samp>](https://github.com/sushichan044/bundlephobia-mcp/commit/c56e762)
+
+##### &nbsp;&nbsp;&nbsp;&nbsp;[View changes on GitHub](https://github.com/sushichan044/bundlephobia-mcp/compare/0.2.8...0.2.9)
+
 ## 0.2.8
 
 ### &nbsp;&nbsp;&nbsp;Features
